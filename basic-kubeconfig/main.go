@@ -20,12 +20,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	cm, err := clientset.CoreV1().ConfigMaps("rhbk-operator").List(context.Background(), metav1.ListOptions{})
+	cm, err := clientset.CoreV1().ConfigMaps("test").List(context.Background(), metav1.ListOptions{})
 	for _, c := range cm.Items {
 		fmt.Printf("Configmap: %s\n", c.Name)
 
 	}
-	deployments, err := clientset.AppsV1().Deployments("rhbk-operator").List(context.Background(), metav1.ListOptions{})
+	deployments, err := clientset.AppsV1().Deployments("test").List(context.Background(), metav1.ListOptions{})
 	for _, deployment := range deployments.Items {
 		fmt.Printf("Deployment %s\n", deployment.Name)
 	}
