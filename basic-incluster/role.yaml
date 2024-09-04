@@ -1,0 +1,17 @@
+kind: Role
+metadata:
+  name: basic-incluster
+  namespace: test
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - list

@@ -1,0 +1,12 @@
+kind: RoleBinding
+metadata:
+  name: basic-incluster
+  namespace: test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: basic-incluster
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: test

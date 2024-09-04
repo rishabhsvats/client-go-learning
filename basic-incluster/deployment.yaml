@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: basic-incluster
+  name: basic-incluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: basic-incluster
+  template:
+    metadata:
+      labels:
+        app: basic-incluster
+    spec:
+      containers:
+      - image: quay.io/rishabh/basic-incluster:4.0
+        name: basic-incluster
