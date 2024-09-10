@@ -14,7 +14,7 @@ import (
 
 func main() {
 
-	kubeconfig := flag.String("kubeconfig", "/home/rissingh/.kube/config", "location to your kubeconfig file")
+	kubeconfig := flag.String("kubeconfig", "/home/rishabh/.kube/config", "location to your kubeconfig file")
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err)
