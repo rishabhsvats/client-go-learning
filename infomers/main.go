@@ -40,7 +40,7 @@ func main() {
 	// })
 	informerfactory.Start(wait.NeverStop)
 	informerfactory.WaitForCacheSync(wait.NeverStop)
-	podItem, _, _ := podinformer.GetIndexer().GetByKey("openshift-gitops" + "/" + "openshift-gitops-application-controller-0")
+	podItem, _, _ := podinformer.GetIndexer().GetByKey("replace-namespace" + "/" + "replace-pod-name")
 
 	pod := podItem.(*corev1.Pod)
 	fmt.Println("Startime is : ", pod.Status.StartTime)
