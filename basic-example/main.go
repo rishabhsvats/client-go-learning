@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -67,7 +68,17 @@ func deploy(client *kubernetes.Clientset, ctx context.Context) (map[string]strin
 	default:
 		return nil, fmt.Errorf("unrecognized type: %s\n", groupVersionKind)
 	}
-	deploymentResponse, err := client.AppsV1().Deployments("nginx").Create(ctx, deployment, metav1.CreateOptions{})
+	_, err = client.AppsV1().Deployments("nginx").Get(ctx, deployment.Name, metav1.GetOptions{})
+	if err != nil && errors.IsNotFound(err) {
+		deploymentResponse, err := client.AppsV1().Deployments("nginx").Create(ctx, deployment, metav1.CreateOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("deployment error: %s", err)
+		}
+		return deploymentResponse.Spec.Template.Labels, nil
+	} else if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("deployment get error: %s", err)
+	}
+	deploymentResponse, err := client.AppsV1().Deployments("nginx").Update(ctx, deployment, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("deployment error: %s", err)
 	}
