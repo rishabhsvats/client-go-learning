@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/google/go-github/v65/github"
+	"golang.org/x/term"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,20 +25,21 @@ import (
 func main() {
 
 	var (
-		client *kubernetes.Clientset
-		err    error
+		err error
 	)
-
-	if client, err = getClient(false); err != nil {
+	s := server{
+		webhookSecretKey: os.Getenv("WEBHOOK_SECRET"),
+	}
+	if s.client, err = getClient(false); err != nil {
 		fmt.Printf("Error: %s", err)
 		os.Exit(1)
 	}
-	s := server{
-		client: client,
+	if s.githubClient, err = getGithubClient(); err != nil {
+		fmt.Println("Error: %s", err)
+		os.Exit(1)
 	}
-
 	http.HandleFunc("/webhook", s.webhook)
-	http.ListenAndServer(":8080", nil)
+	http.ListenAndServe(":8080", nil)
 }
 
 func getClient(inCluster bool) (*kubernetes.Clientset, error) {
@@ -64,6 +68,13 @@ func getClient(inCluster bool) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 	return clientset, nil
+}
+func getGithubClient() (*github.Client, error) {
+	fmt.Print("GitHub Token: ")
+	byteToken, _ := term.ReadPassword(int(os.Stdin.Fd()))
+	println()
+	token := string(byteToken)
+	return github.NewClient(nil).WithAuthToken(token), nil
 }
 
 func deploy(client *kubernetes.Clientset, ctx context.Context) (map[string]string, int32, error) {
