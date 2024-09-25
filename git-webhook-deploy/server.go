@@ -9,29 +9,47 @@ import (
 )
 
 type server struct {
-	client       *kubernetes.Clientset
-	githubClient *github.Client
+	client           *kubernetes.Clientset
+	githubClient     *github.Client
 	webhookSecretKey string
 }
 
 func (s server) webhook(w http.ResponseWriter, req *http.Request) {
-	payload, err := github.ValidatePayload(req, s.webhookSecretKey)
-	if err != nil { 
-		w.Header().Write(500)
-		fmt.Printf("ValidatePayload error : %s". err)
+	payload, err := github.ValidatePayload(req, []byte(s.webhookSecretKey))
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Printf("ValidatePayload error : %s", err)
 		return
-	 }
-	event, err := github.ParseWebHook(github.WebHookType(r), payload)
-	if err != nil { 
-		w.Header().Write(500)
-		fmt.Printf("ValidatePayload error : %s". err)
-		return
-	 }
-	switch event := event.(type) {
-	case *github.CommitCommentEvent:
-		processCommitCommentEvent(event)
-	case *github.CreateEvent:
-		processCreateEvent(event)
-	...
 	}
+	event, err := github.ParseWebHook(github.WebHookType(req), payload)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Printf("parse webhook error : %s", err)
+		return
+	}
+	switch event := event.(type) {
+	case *github.PushEvent:
+		files := getFiles(event.Commits)
+	default:
+		w.WriteHeader(500)
+		fmt.Printf("event not found : %s", event)
+		return
+	}
+}
+
+func getFiles(commits []*github.HeadCommit) []string {
+	allFiles := []string{}
+	for _, commit := range commits {
+		allFiles = append(allFiles, commit.Added...)
+		allFiles = append(allFiles, commit.Modified...)
+	}
+	allUniqueFiles := make(map[string]bool)
+	for _, filename := range allFiles {
+		allUniqueFiles[filename] = true
+	}
+	allUniqueFilesSlice := []string{}
+	for filename := range allUniqueFiles {
+		allUniqueFilesSlice = append(allUniqueFilesSlice, filename)
+	}
+	return allUniqueFilesSlice
 }
