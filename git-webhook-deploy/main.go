@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -77,12 +76,9 @@ func getGithubClient() (*github.Client, error) {
 	return github.NewClient(nil).WithAuthToken(token), nil
 }
 
-func deploy(client *kubernetes.Clientset, ctx context.Context) (map[string]string, int32, error) {
+func deploy(client *kubernetes.Clientset, ctx context.Context, appFile []byte) (map[string]string, int32, error) {
 	var deployment *v1.Deployment
-	appFile, err := ioutil.ReadFile("app.yaml")
-	if err != nil {
-		return nil, 0, fmt.Errorf("error while reading the app.yaml file : %s", err)
-	}
+
 	obj, groupVersionKind, err := scheme.Codecs.UniversalDeserializer().Decode(appFile, nil, nil)
 
 	switch obj := obj.(type) {

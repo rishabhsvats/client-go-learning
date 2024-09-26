@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/go-github/v65/github"
@@ -15,6 +17,7 @@ type server struct {
 }
 
 func (s server) webhook(w http.ResponseWriter, req *http.Request) {
+	ctx := context.Background()
 	payload, err := github.ValidatePayload(req, []byte(s.webhookSecretKey))
 	if err != nil {
 		w.WriteHeader(500)
@@ -30,6 +33,28 @@ func (s server) webhook(w http.ResponseWriter, req *http.Request) {
 	switch event := event.(type) {
 	case *github.PushEvent:
 		files := getFiles(event.Commits)
+		for _, filename := range files {
+			downloadedFile, _, err := s.githubClient.Repositories.DownloadContents(context.Background(), *event.Repo.Owner.Name, *event.Repo.Name, filename, &github.RepositoryContentGetOptions{})
+			if err != nil {
+				w.WriteHeader(500)
+				fmt.Printf("download content error : %s", err)
+				return
+			}
+			defer downloadedFile.Close()
+			fileBody, err := io.ReadAll(downloadedFile)
+			if err != nil {
+				w.WriteHeader(500)
+				fmt.Printf("read all error : %s", err)
+				return
+			}
+			_, _, err = deploy(s.client, ctx, fileBody)
+			if err != nil {
+				w.WriteHeader(500)
+				fmt.Printf("deploy error : %s", err)
+				return
+			}
+			fmt.Printf("Deploy of %s finished\n", filename)
+		}
 	default:
 		w.WriteHeader(500)
 		fmt.Printf("event not found : %s", event)
