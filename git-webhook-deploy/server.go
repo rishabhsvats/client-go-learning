@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v65/github"
 	"k8s.io/client-go/kubernetes"
@@ -31,8 +32,11 @@ func (s server) webhook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	switch event := event.(type) {
+	case *github.Hook:
+		fmt.Printf("Hook is created\n")
 	case *github.PushEvent:
 		files := getFiles(event.Commits)
+		fmt.Printf("found files: %s\n", strings.Join(files, ","))
 		for _, filename := range files {
 			downloadedFile, _, err := s.githubClient.Repositories.DownloadContents(context.Background(), *event.Repo.Owner.Name, *event.Repo.Name, filename, &github.RepositoryContentGetOptions{})
 			if err != nil {
